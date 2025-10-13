@@ -20,9 +20,8 @@ This project provides a simple, automated deployment script for running XRay (V2
 - Docker (optional, for local testing).
 
 ## Quick Start
-1. **Clone the Repo**:
-
-2. ## 👤 Author
+   **Clone the Repo**
+   https://github.com/ahlflk/GCP-V2RAY.git
 
 Made with ❤️ by [AHLFLK2025channel](https://t.me/AHLFLK2025channel)
 
@@ -32,8 +31,12 @@ Made with ❤️ by [AHLFLK2025channel](https://t.me/AHLFLK2025channel)
 
 ---
 
-# 🚀 Cloud Run One-Click GCP-VLESS
+## 🚀 Cloud Run One-Click GCP-V2RAY
 
+Run this script directly in **Google Cloud Shell**:
+
+```bash
+bash <(curl -Ls https://raw.githubusercontent.com/ahlflk/GCP-V2RAY/refs/heads/main/gcp-v2ray.sh)
 Run this script directly in **Google Cloud Shell**:
 
 ```bash
