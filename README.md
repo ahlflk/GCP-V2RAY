@@ -21,3 +21,20 @@ This project provides a simple, automated deployment script for running XRay (V2
 
 ## Quick Start
 1. **Clone the Repo**:
+
+2. ## 👤 Author
+
+Made with ❤️ by [AHLFLK2025channel](https://t.me/AHLFLK2025channel)
+
+---
+
+## #Crd
+
+---
+
+# 🚀 Cloud Run One-Click GCP-VLESS
+
+Run this script directly in **Google Cloud Shell**:
+
+```bash
+bash <(curl -Ls https://raw.githubusercontent.com/ahlflk/GCP-VLESS/refs/heads/main/gcp-vless-sh)
