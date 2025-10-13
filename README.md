@@ -1,4 +1,4 @@
-# GCP Cloud Run V2Ray Multi-Protocol Deployment
+## GCP Cloud Run V2Ray Multi-Protocol Deployment
 
 This project provides a simple, automated deployment script for running XRay (V2Ray-compatible) on Google Cloud Run. It supports multiple protocols (VLESS over WebSocket, VLESS over gRPC, and Trojan) in a single configuration, making it flexible for VPN/proxy setups. The setup uses a lightweight Alpine-based Docker image and deploys serverlessly on Cloud Run for auto-scaling and cost efficiency.
 
@@ -20,8 +20,16 @@ This project provides a simple, automated deployment script for running XRay (V2
 - Docker (optional, for local testing).
 
 ## Quick Start
-   **Clone the Repo**
+   **Clone the Repo**:
    https://github.com/ahlflk/GCP-V2RAY.git
+
+## 📄 License
+
+This project is licensed under the **MIT License**.
+
+---
+
+## 👤 Author
 
 Made with ❤️ by [AHLFLK2025channel](https://t.me/AHLFLK2025channel)
 
@@ -31,13 +39,9 @@ Made with ❤️ by [AHLFLK2025channel](https://t.me/AHLFLK2025channel)
 
 ---
 
-## 🚀 Cloud Run One-Click GCP-V2RAY
+## 🚀 Cloud Run One-Click GCP-VLESS
 
 Run this script directly in **Google Cloud Shell**:
 
 ```bash
 bash <(curl -Ls https://raw.githubusercontent.com/ahlflk/GCP-V2RAY/refs/heads/main/gcp-v2ray.sh)
-Run this script directly in **Google Cloud Shell**:
-
-```bash
-bash <(curl -Ls https://raw.githubusercontent.com/ahlflk/GCP-VLESS/refs/heads/main/gcp-vless-sh)
