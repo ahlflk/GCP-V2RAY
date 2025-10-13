@@ -1,0 +1,107 @@
+{
+  "log": {
+    "loglevel": "warning"
+  },
+  "policy": {
+    "levels": {
+      "0": {
+        "handshake": 4
+      }
+    }
+  },
+  "inbounds": [
+    {
+      "port": 8080,
+      "protocol": "vless",
+      "settings": {
+        "clients": [
+          {
+            "id": "YOUR_UUID_HERE",  // Script replace with $UUID
+            "level": 0
+          }
+        ],
+        "decryption": "none"
+      },
+      "streamSettings": {
+        "network": "ws",
+        "wsSettings": {
+          "path": "/ws",
+          "fallbacks": [
+            {
+              "path": "/",
+              "xray": {
+                "response": {
+                  "type": "http"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": ["http", "tls"]
+      },
+      "tag": "vless-ws"
+    },
+    {
+      "port": 8080,
+      "protocol": "vless",
+      "settings": {
+        "clients": [
+          {
+            "id": "YOUR_UUID_HERE",  // Same UUID for gRPC
+            "level": 0
+          }
+        ],
+        "decryption": "none"
+      },
+      "streamSettings": {
+        "network": "grpc",
+        "grpcSettings": {
+          "serviceName": "grpc-service"
+        }
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": ["http", "tls"]
+      },
+      "tag": "vless-grpc"
+    },
+    {
+      "port": 8080,
+      "protocol": "trojan",
+      "settings": {
+        "clients": [
+          {
+            "password": "YOUR_UUID_HERE"  // Script replace with $UUID or array for multiple
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "tcp"
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": ["http", "tls"]
+      },
+      "tag": "trojan"
+    }
+  ],
+  "outbounds": [
+    {
+      "protocol": "freedom",
+      "settings": {},
+      "tag": "direct"
+    }
+  ],
+  "routing": {
+    "rules": [
+      {
+        "type": "field",
+        "inboundTag": ["vless-ws", "vless-grpc", "trojan"],
+        "outboundTag": "direct"
+      }
+    ]
+  }
+}
