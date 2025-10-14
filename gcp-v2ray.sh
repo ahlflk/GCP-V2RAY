@@ -144,7 +144,6 @@ select_protocol() {
 
 # Enhanced CPU selection with default 2 cores (option 2) (existing functions remain)
 select_cpu() {
-# ... [Omitted for brevity - same as original script] ...
     header "🖥️  CPU Configuration"
     echo -e "${CYAN}Available Options:${NC}"
     echo -e "${BOLD}1.${NC} 1  CPU Core (Lightweight)"
@@ -172,7 +171,6 @@ select_cpu() {
 
 # Enhanced Memory selection with default 2Gi (option 2), no recommend (existing functions remain)
 select_memory() {
-# ... [Omitted for brevity - same as original script] ...
     header "💾 Memory Configuration"
     
     echo -e "${CYAN}Available Options:${NC}"
@@ -210,7 +208,6 @@ select_memory() {
 
 # Validate memory configuration based on CPU (enhanced with more ranges) (existing functions remain)
 validate_memory_config() {
-# ... [Omitted for brevity - same as original script] ...
     local cpu_num=$CPU
     local memory_num=$(echo $MEMORY | sed 's/[^0-9]*//g' | tr -d ' ')
     local memory_unit=$(echo $MEMORY | sed 's/[0-9]*//g' | tr -d ' ')
@@ -262,7 +259,6 @@ validate_memory_config() {
 
 # Enhanced Region selection with default 1 (us-central1) (existing functions remain)
 select_region() {
-# ... [Omitted for brevity - same as original script] ...
     header "🌍 Region Selection"
     echo -e "${CYAN}Available GCP Regions:${NC}"
     echo -e "${BOLD}1.${NC}  🇺🇸 us-central1 (Council Bluffs, Iowa, North America) ${GREEN}[DEFAULT]${NC}"
@@ -304,7 +300,6 @@ select_region() {
 
 # Enhanced Telegram destination selection with default 5 (none) (existing functions remain)
 select_telegram_destination() {
-# ... [Omitted for brevity - same as original script] ...
     header "📱 Telegram Destination"
     echo -e "${CYAN}Available Options:${NC}"
     echo -e "${BOLD}1.${NC} Send to Channel only"
@@ -676,10 +671,8 @@ create_share_link() {
 }
 # ------------------------------------------
 
-
 # Validation functions (existing functions remain)
 validate_prerequisites() {
-# ... [Omitted for brevity - same as original script] ...
     log "Validating prerequisites..."
     
     if ! command -v gcloud &> /dev/null; then
@@ -697,7 +690,6 @@ validate_prerequisites() {
 }
 
 cleanup() {
-# ... [Omitted for brevity - same as original script] ...
     log "Cleaning up temporary files..."
     if [[ -d "GCP-V2RAY" ]]; then
         rm -rf GCP-V2RAY
@@ -710,7 +702,6 @@ cleanup() {
 
 # Enhanced send_to_telegram with escape for special chars (existing functions remain)
 send_to_telegram() {
-# ... [Omitted for brevity - same as original script] ...
     local chat_id="$1"
     local message="$2"
     # Escape special Markdown chars
@@ -740,7 +731,6 @@ send_to_telegram() {
 
 # Enhanced send_deployment_notification with group support (existing functions remain)
 send_deployment_notification() {
-# ... [Omitted for brevity - same as original script] ...
     local message="$1"
     local success_count=0
     
@@ -836,9 +826,11 @@ main() {
     log "Cloning repository..."
     progress_bar 5
     if ! git clone https://github.com/ahlflk/GCP-V2RAY.git; then
-        error "Failed to clone repository - using local files if available"
-        # Fallback: Assume local Dockerfile and config.json
-        exit 1
+        warn "Failed to clone repository - using local files if available"
+    fi
+    
+    if [[ ! -d "GCP-V2RAY" ]]; then
+        error "GCP-V2RAY directory not found. Please create it with Dockerfile and config.json."
     fi
     
     cd GCP-V2RAY
@@ -875,8 +867,7 @@ EOF
     log "Building container image (quiet mode)..."
     progress_bar 10
     if ! gcloud builds submit --config cloudbuild.yaml --quiet; then
-        error "Build failed"
-        exit 1
+        error "Build failed. Check Dockerfile for issues with geo files download."
     fi
     
     log "Deploying to Cloud Run..."
