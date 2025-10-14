@@ -1,25 +1,28 @@
-FROM alpine:latest
+# Use a lean base image (Alpine is lightweight)
+FROM alpine:3.18 as builder
 
-# Install XRay core (supports VLESS WS/gRPC and Trojan)
-RUN apk add --no-cache wget unzip curl \
-    && wget https://github.com/XTLS/Xray-core/releases/latest/download/Xray-linux-64.zip \
-    && unzip Xray-linux-64.zip \
-    && mv xray /usr/local/bin/ \
-    && chmod +x /usr/local/bin/xray \
-    # Download geo assets for better routing
-    && wget https://github.com/XTLS/Xray-core/releases/latest/download/geoip.dat -O /usr/local/share/xray/geoip.dat \
-    && wget https://github.com/XTLS/Xray-core/releases/latest/download/geosite.dat -O /usr/local/share/xray/geosite.dat \
-    && rm -rf Xray-linux-64.zip LICENSE \
-    && apk del wget unzip
+# Install necessary packages
+RUN apk add --no-cache curl unzip
 
-# Copy config (single multi-protocol config)
+# Download Xray-core (You can adjust the version if needed)
+# Cloud Run runs on linux/amd64 (linux-64) architecture
+ENV XRAY_VERSION 1.8.10
+ENV XRAY_URL "https://github.com/XTLS/Xray-core/releases/download/v${XRAY_VERSION}/Xray-linux-64.zip"
+
+RUN curl -L -o xray.zip ${XRAY_URL} \
+    && unzip xray.zip -d /usr/local/bin \
+    && rm xray.zip
+
+# Final minimal image
+FROM alpine:3.18
+
+# Copy Xray binary and config
+COPY --from=builder /usr/local/bin/xray /usr/local/bin/xray
 COPY config.json /etc/xray/config.json
 
-# Expose port for Cloud Run
-EXPOSE 8080
+# Cloud Run injects the PORT env variable; we set a default 8080.
+ENV PORT 8080
 
-# Health check for Cloud Run (Use curl to test HTTP response)
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s CMD curl -f http://localhost:8080/ || exit 1
-
-# Run XRay
-CMD ["xray", "run", "-c", "/etc/xray/config.json"]
+# Xray Command: Run Xray and listen on 0.0.0.0 for the specified port (8080).
+# Cloud Run Ingress will forward 443 traffic to this 8080 port.
+CMD ["/usr/local/bin/xray", "-config", "/etc/xray/config.json", "-address", "0.0.0.0"]

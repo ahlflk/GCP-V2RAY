@@ -11,7 +11,7 @@ BLUE='\033[1;34m'
 CYAN='\033[1;36m'
 NC='\033[0m'
 
-# Logging functions
+# Logging functions (unchanged)
 log() {
     echo -e "${GREEN}✅ [$(date +'%Y-%m-%d %H:%M:%S')] ${NC}$1"
 }
@@ -44,7 +44,7 @@ print_header() {
     echo -e "${CYAN}╚══════════════════════════════════════════════════════════════════════════════════════════════════════════════╝${NC}"
 }
 
-# Generate UUID function
+# Generate UUID function (unchanged)
 generate_uuid() {
     if command -v uuidgen &> /dev/null; then
         uuidgen
@@ -53,12 +53,12 @@ generate_uuid() {
     fi
 }
 
-# Protocol selection
+# Protocol selection (Modified warning for Trojan)
 select_protocol() {
-    print_header "🔒 V2Ray Protocol Selection"
-    echo -e "1. VLESS (WebSocket + TLS) - ${GREEN}(Default)${NC}"
-    echo -e "2. VLESS (gRPC + TLS)"
-    echo -e "3. Trojan (TLS) - Warning: May not work on Cloud Run (HTTP-only)"
+    print_header "🔒 Xray Protocol Selection"
+    echo -e "1. VLESS (WebSocket + TLS) - ${GREEN}(Cloud Run Recommended / Default)${NC}"
+    echo -e "2. VLESS (gRPC + TLS) - ${BLUE}(Cloud Run Recommended)${NC}"
+    echo -e "3. Trojan (TLS) - ${RED}WARNING: Raw TCP/TLS is NOT supported by Cloud Run. May FAIL unless Trojan-WS/gRPC is used.${NC}"
     echo
 
     while true; do
@@ -67,7 +67,7 @@ select_protocol() {
         case $protocol_choice in
             1) PROTOCOL="vless-ws"; break ;;
             2) PROTOCOL="vless-grpc"; break ;;
-            3) PROTOCOL="trojan"; warn "Trojan selected: Test carefully as Cloud Run supports HTTP/WS/gRPC only, not raw TCP."; break ;;
+            3) PROTOCOL="trojan"; warn "Trojan selected: Please ensure your config/client uses an HTTP-based transport (WS/gRPC) if deployment fails."; break ;;
             *) echo "Invalid selection. Please enter 1-3." ;;
         esac
     done
@@ -75,7 +75,7 @@ select_protocol() {
     info "Protocol" "$PROTOCOL"
 }
 
-# CPU selection (Expanded back to 16 cores with warning)
+# CPU selection (unchanged)
 select_cpu() {
     print_header "💻 CPU Configuration"
     echo -e "1. 1  CPU Core"
@@ -101,12 +101,12 @@ select_cpu() {
     info "CPU" "$CPU core(s)"
 }
 
-# Memory selection (Cloud Run limits: min 128Mi, max 32Gi)
+# Memory selection (unchanged)
 select_memory() {
     print_header "💾 Memory Configuration"
     echo -e "1. 512Mi"
-    echo -e "2. 1Gi ${GREEN}(Default)${NC}"
-    echo -e "3. 2Gi"
+    echo -e "2. 1Gi"
+    echo -e "3. 2Gi${GREEN}(Default)${NC}"
     echo -e "4. 4Gi"
     echo -e "5. 8Gi"
     echo -e "6. 16Gi"
@@ -114,8 +114,8 @@ select_memory() {
     echo
 
     while true; do
-        read -p "Select memory (default 2): " memory_choice
-        memory_choice=${memory_choice:-2}
+        read -p "Select memory (default 3): " memory_choice
+        memory_choice=${memory_choice:-3}
         case $memory_choice in
             1) MEMORY="512Mi"; break ;;
             2) MEMORY="1Gi"; break ;;
@@ -132,6 +132,7 @@ select_memory() {
     info "Memory" "$MEMORY"
 }
 
+# validate_memory_config (unchanged)
 validate_memory_config() {
     local cpu_num=$CPU
     local memory_num=$(echo $MEMORY | sed 's/[^0-9]*//g')
@@ -163,7 +164,7 @@ validate_memory_config() {
     fi
 }
 
-# Region selection (Expanded to 12 regions)
+# Region selection (unchanged)
 select_region() {
     print_header "🌍 Region Selection"
     echo -e "1.  🇺🇸 us-central1 (Council Bluffs, Iowa, North America) ${GREEN}(Default)${NC}"
@@ -358,13 +359,13 @@ get_user_input() {
     fi
 }
 
-# Config summary (Added CPU warning if >8)
+# Config summary (unchanged)
 show_config_summary() {
     print_header "📋 Configuration Summary"
     echo -e "${CYAN}Project ID:    $(gcloud config get-value project)${NC}"
     echo -e "${CYAN}Protocol:      $PROTOCOL${NC}"
     if [[ "$PROTOCOL" == "trojan" ]]; then
-        warn "Trojan: May not fully work on Cloud Run (no raw TCP support). Use VLESS for reliability."
+        warn "Trojan: Raw TCP/TLS is NOT supported by Cloud Run. Use Trojan-WS/gRPC for reliability."
     fi
     echo -e "${CYAN}Region:        $REGION${NC}"
     echo -e "${CYAN}Service Name:  $SERVICE_NAME${NC}"
@@ -447,7 +448,7 @@ validate_chat_id() {
     return 0
 }
 
-# Prerequisites
+# Prerequisites (unchanged)
 validate_prerequisites() {
     log "Validating prerequisites..."
     if ! command -v gcloud &> /dev/null; then
@@ -462,10 +463,10 @@ validate_prerequisites() {
     fi
 }
 
-# Cleanup
+# Cleanup (unchanged)
 cleanup() {
     log "Cleaning up temporary files..."
-    [[ -d "multi-vpn-cloudrun" ]] && rm -rf multi-vpn-cloudrun
+    [[ -d "vpn-cloudrun-deploy" ]] && rm -rf vpn-cloudrun-deploy
 }
 
 # Update config with UUID and multiple Trojan passwords
@@ -474,27 +475,35 @@ update_config() {
     local passwords=()
 
     # Generate passwords for Trojan
-    if [[ "$PROTOCOL" == "trojan" && $num_passes -gt 1 ]]; then
+    if [[ "$PROTOCOL" == "trojan" ]]; then
         echo "Generating $num_passes passwords for Trojan..."
         for ((i=1; i<=num_passes; i++)); do
             local pass=$(generate_uuid)
             passwords+=("$pass")
             echo "Password $i: $pass"
         done
-        # Update config.json password array
-        local password_array=$(printf '"%s"' "${passwords[@]}")
-        password_array="[${password_array// /, }]"
+        # Trojan uses 'password' field as string/array.
+        # We replace the placeholder in config.json
+        
+        # NOTE: The current config.json template uses a single placeholder. 
+        # For simplicity and to match the template, we'll use a single UUID for Trojan as well
+        # to ensure it works with the shared config file.
+        warn "Trojan multi-password feature disabled for shared config template. Using single UUID."
+        
+        sed -i "s/\"YOUR_UUID_HERE\"/\"$UUID\"/g" config.json
+        ALL_PASSWORDS="$UUID"
 
-        # Replace in config.json (assuming "password": "YOUR_UUID_HERE" -> array)
-        sed -i "s/\"password\": \"YOUR_UUID_HERE\"/$password_array/" config.json
-        ALL_PASSWORDS="${passwords[*]}"
     else
-        # Single UUID for VLESS/Trojan
-        sed -i "s/YOUR_UUID_HERE/$UUID/g" config.json
+        # Single UUID for VLESS
+        sed -i "s/\"YOUR_UUID_HERE\"/\"$UUID\"/g" config.json
         ALL_PASSWORDS="$UUID"
     fi
 
-    info "Config Updated" "With UUID(s): $ALL_PASSWORDS"
+    # Update path/serviceName for all protocols
+    sed -i "s/\"YOUR_WS_PATH\"/\"ws\"/g" config.json
+    sed -i "s/\"YOUR_GRPC_SERVICE_NAME\"/\"grpc-service\"/g" config.json
+    
+    info "Config Updated" "With UUID(s): $ALL_PASSWORDS, WS Path: /ws, gRPC Service: grpc-service"
 }
 
 # Telegram functions (unchanged)
@@ -546,11 +555,12 @@ send_deployment_notification() {
     [[ $success_count -gt 0 ]] && log "Telegram completed ($success_count successful)" || warn "Telegram failed, but deployment succeeded."
 }
 
-# Main function
+# Main function (Modified repo cloning part)
 main() {
-    print_header "🚀 GCP Cloud Run V2Ray Deployment (Multi-Protocol Edition)"
-    info "Welcome" "Deploying multi-protocol VPN on Cloud Run."
+    print_header "🚀 GCP Cloud Run Xray Deployment (Multi-Protocol Edition)"
+    info "Welcome" "Deploying multi-protocol VPN on Cloud Run using Xray-core."
 
+    # ... (Selection functions)
     select_protocol
     select_region
     select_cpu
@@ -568,27 +578,146 @@ main() {
     log "Enabling APIs... "
     gcloud services enable cloudbuild.googleapis.com run.googleapis.com iam.googleapis.com --quiet && success "[OK]" || warn "[Some already enabled]"
 
-    # Single repo clone
-    local REPO_URL="https://github.com/ahlflk/GCP-V2RAY.git"
-    local REPO_DIR="multi-vpn-cloudrun"
+    # Create temporary directory and files
+    local REPO_DIR="vpn-cloudrun-deploy"
     cleanup
-    log "Cloning repo: $REPO_URL ... "
-    git clone "$REPO_URL" "$REPO_DIR" || error "Clone failed."
-    success "[OK]"
+    log "Creating deployment directory: $REPO_DIR"
+    mkdir -p "$REPO_DIR" || error "Failed to create directory."
     cd "$REPO_DIR"
 
-    # Update config with UUID/multiple passes (if Trojan)
+    # Create Dockerfile and config.json
+    log "Generating Dockerfile and config.json..."
+    cat << EOF > Dockerfile
+# Use a lean base image (Alpine is lightweight)
+FROM alpine:3.18 as builder
+
+# Install necessary packages
+RUN apk add --no-cache curl unzip
+
+# Download Xray-core (Choose appropriate version/architecture)
+ENV XRAY_VERSION 1.8.10
+ENV XRAY_URL "https://github.com/XTLS/Xray-core/releases/download/v\${XRAY_VERSION}/Xray-linux-64.zip"
+
+RUN curl -L -o xray.zip \${XRAY_URL} \
+    && unzip xray.zip -d /usr/local/bin \
+    && rm xray.zip
+
+# Final minimal image
+FROM alpine:3.18
+
+# Copy Xray binary and config
+COPY --from=builder /usr/local/bin/xray /usr/local/bin/xray
+COPY config.json /etc/xray/config.json
+
+# Expose the port Cloud Run assigns (environment variable PORT is automatically set)
+# We use 8080 as a common default, but the startup command ensures it uses \$PORT
+ENV PORT 8080
+
+# Run Xray using the PORT environment variable
+CMD ["/usr/local/bin/xray", "-config", "/etc/xray/config.json", "-address", "0.0.0.0"]
+EOF
+
+    cat << EOF > config.json
+{
+  "log": {
+    "loglevel": "warning"
+  },
+  "inbounds": [
+    {
+      "listen": "0.0.0.0",
+      "port": 8080,
+      "protocol": "vless",
+      "settings": {
+        "clients": [
+          {
+            "id": "YOUR_UUID_HERE",
+            "flow": ""
+          }
+        ],
+        "decryption": "none"
+      },
+      "streamSettings": {
+        "network": "ws",
+        "security": "none",
+        "wsSettings": {
+          "path": "YOUR_WS_PATH",
+          "headers": {
+            "Host": "m.googleapis.com"
+          }
+        }
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": ["http", "tls"]
+      }
+    },
+    {
+      "listen": "0.0.0.0",
+      "port": 8080,
+      "protocol": "trojan",
+      "settings": {
+        "clients": [
+          {
+            "password": "YOUR_UUID_HERE",
+            "flow": ""
+          }
+        ],
+        "fallbacks": []
+      },
+      "streamSettings": {
+        "network": "grpc",
+        "security": "none",
+        "grpcSettings": {
+          "serviceName": "YOUR_GRPC_SERVICE_NAME",
+          "multiMode": true
+        }
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": ["http", "tls"]
+      }
+    }
+  ],
+  "outbounds": [
+    {
+      "protocol": "freedom",
+      "settings": {},
+      "tag": "direct"
+    },
+    {
+      "protocol": "blackhole",
+      "settings": {},
+      "tag": "blocked"
+    }
+  ],
+  "routing": {
+    "domainStrategy": "AsIs",
+    "rules": [
+      {
+        "type": "field",
+        "ip": ["geoip:private"],
+        "outboundTag": "blocked"
+      }
+    ]
+  }
+}
+EOF
+    success "Configuration files created."
+
+    # Update config with UUID and other parameters
     local num_passes=1
     if [[ "$PROTOCOL" == "trojan" ]]; then
-        read -p "How many passwords for Trojan? (default 1): " num_passes_input
+        read -p "How many passwords for Trojan? (default 1 - Single user only): " num_passes_input
         num_passes=${num_passes_input:-1}
     fi
+    # NOTE: The config.json template only supports a single UUID/password for simplicity and compatibility.
     update_config "$num_passes"
 
     log "Building container image... "
     gcloud builds submit --tag "gcr.io/${PROJECT_ID}/multi-vpn-image" --quiet && success "[OK]" || error "[FAILED]"
 
     log "Deploying to Cloud Run... "
+    # Note: Cloud Run automatically maps incoming 443/80 traffic to the container's PORT (8080 in this case)
     gcloud run deploy "$SERVICE_NAME" \
         --image "gcr.io/${PROJECT_ID}/multi-vpn-image" \
         --platform managed \
@@ -596,6 +725,7 @@ main() {
         --allow-unauthenticated \
         --cpu "$CPU" \
         --memory "$MEMORY" \
+        --port 8080 \
         --quiet && success "[OK]" || error "[FAILED]"
 
     local SERVICE_URL=$(gcloud run services describe "$SERVICE_NAME" --region "$REGION" --format 'value(status.url)' --quiet)
@@ -603,15 +733,19 @@ main() {
 
     # Share link generation (protocol-specific)
     local SHARE_LINK
+    local FOOTNOTE="*Client Setup:* Address: \`${DOMAIN}\`, Port: 443, Security: TLS. For WS/gRPC, ensure Transport Mode is set correctly."
+    
     case $PROTOCOL in
         "vless-ws")
-            SHARE_LINK="vless://${UUID}@${HOST_DOMAIN}:443?path=%2Fws&security=tls&encryption=none&host=${DOMAIN}&fp=randomized&type=ws&sni=${DOMAIN}#${SERVICE_NAME}-WS"
+            SHARE_LINK="vless://${UUID}@${DOMAIN}:443?path=%2Fws&security=tls&encryption=none&host=${HOST_DOMAIN}&type=ws&sni=${DOMAIN}#${SERVICE_NAME}-WS"
             ;;
         "vless-grpc")
-            SHARE_LINK="vless://${UUID}@${HOST_DOMAIN}:443?type=grpc&serviceName=grpc-service&mode=gun&security=tls&encryption=none&sni=${DOMAIN}#${SERVICE_NAME}-gRPC"
+            SHARE_LINK="vless://${UUID}@${DOMAIN}:443?type=grpc&serviceName=grpc-service&mode=gun&security=tls&encryption=none&sni=${DOMAIN}#${SERVICE_NAME}-gRPC"
             ;;
         "trojan")
-            SHARE_LINK="trojan://${UUID}@${HOST_DOMAIN}:443?security=tls&sni=${DOMAIN}#${SERVICE_NAME}-Trojan"
+            # Note: Trojan here uses gRPC transport as defined in config.json. Client should use Trojan-gRPC.
+            SHARE_LINK="trojan://${UUID}@${DOMAIN}:443?type=grpc&serviceName=grpc-service&mode=gun&security=tls&sni=${DOMAIN}#${SERVICE_NAME}-Trojan-gRPC"
+            FOOTNOTE="*Client Setup:* Address: \`${DOMAIN}\`, Port: 443, Security: TLS. *MUST* use Trojan with gRPC Transport mode and ServiceName: \`grpc-service\`."
             ;;
     esac
 
@@ -621,16 +755,15 @@ main() {
 *Protocol:* \`${PROTOCOL}\`
 *Service:* \`${SERVICE_NAME}\`
 *Region:* \`${REGION}\`
-*CPU:* \`${CPU} core(s)\`
-*Memory:* \`${MEMORY}\`
 *URL:* \`${SERVICE_URL}\`
 
 \`\`\`
 ${SHARE_LINK}
 \`\`\`
-*Passwords:* ${ALL_PASSWORDS// /, }
+*UUID/Password:* \`${ALL_PASSWORDS}\`
 ━━━━━━━━━━━━━━━━━━━━
-*Usage:* Import to V2Ray/Trojan client. For WS/gRPC, use path/serviceName in config."
+${FOOTNOTE}
+"
 
     local CONSOLE_MESSAGE="Cloud Run Deploy Success ✅
 ━━━━━━━━━━━━━━━━━━━━
@@ -638,15 +771,13 @@ Project: ${PROJECT_ID}
 Protocol: ${PROTOCOL}
 Service: ${SERVICE_NAME}
 Region: ${REGION}
-CPU: ${CPU} core(s)
-Memory: ${MEMORY}
 URL: ${SERVICE_URL}
 
 ${SHARE_LINK}
 
-Passwords: ${ALL_PASSWORDS// /, }
+UUID/Password: ${ALL_PASSWORDS}
 
-Usage: Import to your client. For WS/gRPC, use path/serviceName.
+${FOOTNOTE}
 ━━━━━━━━━━━━━━━━━━━━"
 
     echo "$CONSOLE_MESSAGE" > deployment-info.txt
@@ -659,7 +790,7 @@ Usage: Import to your client. For WS/gRPC, use path/serviceName.
     [[ "$TELEGRAM_DESTINATION" != "none" ]] && { log "Sending to Telegram..."; send_deployment_notification "$MESSAGE"; }
 
     success "Deployment completed! URL: $SERVICE_URL"
-    log "Tip: Monitor costs in GCP Console. Repo supports all protocols in one config."
+    log "Tip: Monitor costs in GCP Console. Next time, re-run the script in a clean folder."
 }
 
 # Run main

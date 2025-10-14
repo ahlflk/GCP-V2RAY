@@ -2,90 +2,85 @@
   "log": {
     "loglevel": "warning"
   },
-  "policy": {
-    "levels": {
-      "0": {
-        "handshake": 4
-      }
-    }
-  },
   "inbounds": [
     {
+      "listen": "0.0.0.0",
       "port": 8080,
       "protocol": "vless",
       "settings": {
         "clients": [
           {
-            "id": "YOUR_UUID_HERE",  // Script replace with $UUID
-            "level": 0
+            "id": "YOUR_UUID_HERE",
+            "flow": ""
           }
         ],
         "decryption": "none"
       },
       "streamSettings": {
         "network": "ws",
+        "security": "none",
         "wsSettings": {
-          "path": "/ws",
-          "fallbacks": [
-            {
-              "path": "/",
-              "xray": {
-                "response": {
-                  "type": "http"
-                }
-              }
-            }
-          ]
+          "path": "YOUR_WS_PATH",
+          "headers": {
+            "Host": "m.googleapis.com"
+          }
         }
       },
       "sniffing": {
         "enabled": true,
         "destOverride": ["http", "tls"]
-      },
-      "tag": "vless-ws"
+      }
     },
     {
+      "listen": "0.0.0.0",
       "port": 8080,
       "protocol": "vless",
       "settings": {
         "clients": [
           {
-            "id": "YOUR_UUID_HERE",  // Same UUID for gRPC
-            "level": 0
+            "id": "YOUR_UUID_HERE",
+            "flow": ""
           }
         ],
         "decryption": "none"
       },
       "streamSettings": {
         "network": "grpc",
+        "security": "none",
         "grpcSettings": {
-          "serviceName": "grpc-service"
+          "serviceName": "YOUR_GRPC_SERVICE_NAME",
+          "multiMode": true
         }
       },
       "sniffing": {
         "enabled": true,
         "destOverride": ["http", "tls"]
-      },
-      "tag": "vless-grpc"
+      }
     },
     {
+      "listen": "0.0.0.0",
       "port": 8080,
       "protocol": "trojan",
       "settings": {
         "clients": [
           {
-            "password": "YOUR_UUID_HERE"  // Script replace with $UUID or array for multiple
+            "password": "YOUR_UUID_HERE"
           }
-        ]
+        ],
+        "fallbacks": []
       },
       "streamSettings": {
-        "network": "tcp"
+        "network": "grpc",
+        "security": "none",
+        "grpcSettings": {
+          "serviceName": "YOUR_GRPC_SERVICE_NAME",
+          "multiMode": true
+        }
       },
       "sniffing": {
         "enabled": true,
         "destOverride": ["http", "tls"]
-      },
-      "tag": "trojan"
+      }
     }
   ],
   "outbounds": [
@@ -93,14 +88,20 @@
       "protocol": "freedom",
       "settings": {},
       "tag": "direct"
+    },
+    {
+      "protocol": "blackhole",
+      "settings": {},
+      "tag": "blocked"
     }
   ],
   "routing": {
+    "domainStrategy": "AsIs",
     "rules": [
       {
         "type": "field",
-        "inboundTag": ["vless-ws", "vless-grpc", "trojan"],
-        "outboundTag": "direct"
+        "ip": ["geoip:private"],
+        "outboundTag": "blocked"
       }
     ]
   }
