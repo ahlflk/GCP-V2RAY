@@ -608,9 +608,8 @@ prepare_config_files() {
             # 2. Update transport 'type' from 'ws' to 'grpc'
             # 3. Add 'serviceName' for gRPC
             sed -i "s/PLACEHOLDER_UUID/$UUID/g" config.json
-            sed -i "s|\"type\": \"ws\"|\"type\": \"grpc\"|g" config.json
-            sed -i "s|\"path\": \"/vless\"|\"serviceName\": \"$VLESS_GRPC_SERVICE_NAME\"|g" config.json
-            sed -i "s|\"path\": \"/vless\"|\"serviceName\": \"$VLESS_GRPC_SERVICE_NAME\"|g" config.json # Run twice just in case
+            sed -i "s|\"network\": \"ws\"|\"network\": \"grpc\"|g" config.json
+            sed -i "s|\"wsSettings\": { \"path\": \"/vless\" }|\"grpcSettings\": { \"serviceName\": \"$VLESS_GRPC_SERVICE_NAME\" }|g" config.json
             log "VLESS-gRPC config prepared with UUID and ServiceName"
             ;;
             
@@ -623,7 +622,7 @@ prepare_config_files() {
             sed -i 's|"protocol": "vless"|"protocol": "trojan"|g' config.json
             
             # Change settings from VLESS format to Trojan format
-            sed -i "s|\"clients\": \[{\"id\": \"PLACEHOLDER_UUID\"}|\"users\": \[{\"password\": \"$TROJAN_PASSWORD\"}|g" config.json
+            sed -i "s|\"clients\": \[ { \"id\": \"PLACEHOLDER_UUID\" } ]|\"users\": \[ { \"password\": \"$TROJAN_PASSWORD\" } ]|g" config.json
             
             # Set transport path for Trojan-WS
             sed -i "s|\"path\": \"/vless\"|\"path\": \"$VLESS_PATH\"|g" config.json
@@ -866,7 +865,7 @@ EOF
     
     log "Building container image (quiet mode)..."
     progress_bar 10
-    if ! gcloud builds submit --config cloudbuild.yaml --quiet; then
+    if ! gcloud builds submit --config cloudbuild.yaml --quiet > /dev/null 2>&1; then
         error "Build failed. Check Dockerfile for issues with geo files download."
     fi
     
