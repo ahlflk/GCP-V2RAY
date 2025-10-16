@@ -1,18 +1,26 @@
-FROM alpine:latest
+# Use Debian slim as base image
+FROM debian:bullseye-slim
 
-RUN apk add --no-cache wget unzip
+# Set working directory
+WORKDIR /app
 
-RUN wget https://github.com/XTLS/Xray-core/releases/latest/download/Xray-linux-64.zip && \
+# Install necessary tools and dependencies
+RUN apt-get update -qq -y && \
+    apt-get install -qq -y unzip curl && \
+    rm -rf /var/lib/apt/lists/*
+
+# Download and install Xray
+RUN curl -L -o Xray-linux-64.zip https://github.com/XTLS/Xray-core/releases/latest/download/Xray-linux-64.zip && \
     unzip -q Xray-linux-64.zip && \
-    mkdir -p /usr/local/share/xray && \
-    mv xray /usr/local/bin/ && \
-    wget https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat -O /usr/local/share/xray/geoip.dat && \
-    wget https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat -O /usr/local/share/xray/geosite.dat && \
-    rm Xray-linux-64.zip && \
-    rm -f LICENSE README.md
+    rm -f Xray-linux-64.zip && \
+    chmod +x /app/xray && \
+    mkdir -p /etc/xray
 
-RUN chmod +x /usr/local/bin/xray
-
+# Copy configuration files
 COPY config.json /etc/xray/config.json
 
-CMD ["/usr/local/bin/xray", "-config", "/etc/xray/config.json"]
+# Expose ports
+EXPOSE 8080
+
+# Run Xray
+CMD ["xray", "run", "-config", "/etc/xray/config.json"]

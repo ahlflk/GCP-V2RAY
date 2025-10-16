@@ -39,7 +39,7 @@ Run the script:
 - Output: Deployment info in console and `deployment-info.txt`. Share link for V2Ray clients.
 
 ## Files
-- **script.sh**: Main deployment script.
+- **gcp-v2ray.sh**: Main deployment script.
 - **Dockerfile**: Builds the Xray container (downloads geo files separately).
 - **config.json**: Xray configuration template (modified by script).
 
@@ -68,4 +68,4 @@ Made with ❤️ by [AHLFLK2025channel](https://t.me/AHLFLK2025channel)
 Run this script directly in **Google Cloud Shell**:
 
 ```bash
-bash <(curl -Ls https://raw.githubusercontent.com/ahlflk/GCP-VLESS/refs/heads/main/gcp-vless.sh)
+bash <(curl -Ls https://raw.githubusercontent.com/ahlflk/GCP-V2RAY/refs/heads/main/gcp-v2ray.sh)
