@@ -1,4 +1,7 @@
 {
+  "log": {
+    "loglevel": "warning"
+  },
   "inbounds": [
     {
       "port": 8080,
@@ -6,8 +9,7 @@
       "settings": {
         "clients": [
           {
-            "id": "PLACEHOLDER_UUID",
-            "flow": "xtls-rprx-direct"
+            "id": "PLACEHOLDER_UUID"
           }
         ],
         "decryption": "none"
@@ -16,21 +18,11 @@
         "network": "ws",
         "wsSettings": {
           "path": "/vless"
-        },
-        "security": "tls",
-        "tlsSettings": {
-          "serverName": "m.googleapis.com",
-          "minVersion": "1.2",
-          "cipherSuites": ""
         }
-      }
-    },
-    {
-      "port": 8080,
-      "protocol": "http",
-      "settings": {
-        "path": "/health",
-        "response": "OK"
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": ["http", "tls"]
       }
     }
   ],

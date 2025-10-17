@@ -39,7 +39,7 @@ Run the script:
 - Output: Deployment info in console and `deployment-info.txt`. Share link for V2Ray clients.
 
 ## Files
-- **gcp-v2ray.sh**: Main deployment script.
+- **script.sh**: Main deployment script.
 - **Dockerfile**: Builds the Xray container (downloads geo files separately).
 - **config.json**: Xray configuration template (modified by script).
 
